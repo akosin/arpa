@@ -1,0 +1,246 @@
+// -*- c -*-
+
+#define REPEAT_DELAY 100L
+
+/* While waiting for the A or B button to be pressed, display the
+   string from the array of strings passed in which corresponds to the
+   current selection.  If the button pressed is the A button, returns
+   the index of the string selected (0 to n-1).  If the button pressed
+   is the B button, returns -1.  */
+int select_string(char choices[][], int init_sel)
+{
+    int selection=init_sel,last_selection=-1,button=0;
+    int p_bstate, bstate;
+    int i;
+    int n = _array_size(choices);
+    
+    /* Initialize the button state */
+    p_bstate = bstate = button_state();
+    
+    /* Clear the display and print the instructions and options */
+    display_clear();
+    printf("Up/Down: Move selection\nA: Select, B: Exit\n\n");
+    for(i=0; i<n; i++) {
+        printf("  %s\n", choices[i]);
+    }
+    
+    /* While neither A nor B button is pressed, display the string
+       from the array of strings passed in which corresponds to the
+       current selection */
+    while(1) {
+        p_bstate = bstate;
+        bstate = button_state();
+        if(button_hit(A_BTN, p_bstate, bstate)) {
+            button = A_BTN;
+            break;
+        }
+        else if(button_hit(B_BTN, p_bstate, bstate)) {
+              button = B_BTN;
+              break;
+          }
+          else if(button_hit(UP_BTN, p_bstate, bstate) && selection > 0) {
+                selection--;
+            }
+            else if(button_hit(DOWN_BTN, p_bstate, bstate) && selection < n-1) {
+                  selection++;
+              }
+              if(selection!=last_selection) {
+            if(last_selection >= 0) {
+                display_set_xy(0, last_selection + 3);
+                printf(" ");
+            }
+            display_set_xy(0, selection + 3);
+            printf("*");
+            last_selection=selection;
+        }
+    }
+    
+    /* Set the display position to the end of the menu */
+    display_set_xy(0, n + 4);
+    
+    /* Wait until no button is pressed */
+    while(any_button());
+    
+    if(button==B_BTN)
+      return(-1); /** -1 means B pressed -- do not reset value **/
+    else
+      return(selection); /* A pressed, return val */
+}
+
+/* While waiting for a button press, display the string passed in and
+   val, the integer value betwen min_val and max_val currently
+   selected.  If the button pressed is the A button, returns the
+   final value of val.  If the button pressed is the B button,
+   returns -1.  */
+int select_int_value(char s[],int min_val,int max_val, int init_val)
+{
+    int val=init_val, last_val=init_val, button;
+    int p_bstate, bstate;
+    int x, y;
+    long chg_mtime;
+    int rpt_ok, rpt_num;
+    
+    printf("Left/Right: Choose %d to %d\n",min_val, max_val);
+    
+    /* Print the string and determine the x, y for the value */
+    printf("%s:\t", s);
+    display_get_xy(&x, &y);
+    printf("%d", val);
+    
+    /* While neither A nor B button is pressed, display the string
+       from the array of strings passed in which corresponds to the
+       current selection */
+    while(1) {
+        p_bstate = bstate;
+        bstate = button_state();
+        
+        /* Check if it's late enough for a repeat */
+        if(mseconds() > chg_mtime + REPEAT_DELAY) {
+            rpt_ok=1;
+        }
+        if(button_hit(A_BTN, p_bstate, bstate)) {
+            button = A_BTN;
+            break;
+        }
+        else if(button_hit(B_BTN, p_bstate, bstate)) {
+              button = B_BTN;
+              break;
+          }
+          else if((button_hit(LEFT_BTN, p_bstate, bstate) ||
+                   (button_held(LEFT_BTN, p_bstate, bstate) && rpt_ok))
+                  && val > min_val) {
+                val-=rpt_num;
+                if(val<min_val) {
+                    val=min_val;
+                }
+            }
+            else if((button_hit(RIGHT_BTN, p_bstate, bstate)  ||
+                     (button_held(RIGHT_BTN, p_bstate, bstate) && rpt_ok))
+                    && val < max_val) {
+                  val+=rpt_num;
+                  if(val>max_val) {
+                      val=max_val;
+                  }
+              }
+              if(val!=last_val) {
+            display_set_xy(x, y);
+            printf("       ");
+            display_set_xy(x, y);
+            printf("%d", val);
+            last_val=val;
+            chg_mtime=mseconds();
+            rpt_ok=0;
+            rpt_num++;
+        }
+        else if(rpt_ok) {
+              /* Could have changed value if button was held 
+but didn't, so assume that button wasn't held */
+              rpt_num=1;
+          }
+    }
+    
+    /* Set the display position to the start of the next line */
+    printf("\n");
+    
+    /* Wait until no button is pressed */
+    while(any_button());
+    
+    if(button==B_BTN)
+      return(-1); /** -1 means B pressed -- do not reset value **/
+    else
+      return(val); /* A pressed, return val */
+}
+
+/* While waiting for a button press, display the string passed in and
+   val, the float value betwen min_val and max_val currently
+   selected.  If the button pressed is the A button, returns the
+   final value of val.  If the button pressed is the B button,
+   returns -1.  */
+float select_float_value(char s[],float min_val,float max_val,
+                         float step, float init_val)
+{
+    float val=init_val, last_val=init_val, mod_val=step;
+    int button;
+    int p_bstate, bstate;
+    int x, y;
+    long chg_mtime;
+    int rpt_ok;
+    
+    printf("Left/Right: Choose %f to %f\n",min_val, max_val);
+    
+    /* Print the string and determine the x, y for the value */
+    printf("%s:\t", s);
+    display_get_xy(&x, &y);
+    printf("%f", val);
+    
+    /* While neither A nor B button is pressed, display the string
+       from the array of strings passed in which corresponds to the
+       current selection */
+    while(1) {
+        p_bstate = bstate;
+        bstate = button_state();
+        
+        /* Check if it's late enough for a repeat */
+        if(mseconds() > chg_mtime + REPEAT_DELAY) {
+            rpt_ok=1;
+        }
+        if(button_hit(A_BTN, p_bstate, bstate)) {
+            button = A_BTN;
+            break;
+        }
+        else if(button_hit(B_BTN, p_bstate, bstate)) {
+              button = B_BTN;
+              break;
+          }
+          else if((button_hit(LEFT_BTN, p_bstate, bstate) ||
+                   (button_held(LEFT_BTN, p_bstate, bstate) && rpt_ok))
+                  && val > min_val) {
+                val-=mod_val;
+                if(val<min_val) {
+                    val=min_val;
+                }
+            }
+            else if((button_hit(RIGHT_BTN, p_bstate, bstate)  ||
+                     (button_held(RIGHT_BTN, p_bstate, bstate) && rpt_ok))
+                    && val < max_val) {
+                  val+=mod_val;
+                  if(val>max_val) {
+                      val=max_val;
+                  }
+              }
+              if(val!=last_val) {
+            display_set_xy(x, y);
+            printf("       ", val);
+            display_set_xy(x, y);
+            printf("%f", val);
+            last_val=val;
+            chg_mtime=mseconds();
+            rpt_ok=0;
+            mod_val+=step;
+        }
+        else if(rpt_ok) {
+              /* Could have changed value if button was held but
+        didn't, so assume that button wasn't held */
+              mod_val=step;
+          }
+    }
+    
+    /* Set the display position to the start of the next line */
+    printf("\n");
+    
+    /* Wait until no button is pressed */
+    while(any_button());
+    
+    if(button==B_BTN)
+      return(-1.0); /** -1 means B pressed -- do not reset value **/
+    else
+      return(val); /* A pressed, return val */
+}
+
+
+// For emacs to interpret formatting uniformly despite dotfile differences:
+//   Local variables:
+//    comment-column: 40
+//    c-indent-level: 4
+//    c-basic-offset: 4
+//   End:

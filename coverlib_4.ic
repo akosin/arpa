@@ -1,0 +1,82 @@
+//Created By: Austin Kosin
+int initialSpeed=200;
+int coverSpeed=90;//change this 20 to 500
+
+int cover(int color){
+    int count=0;
+    float speedRatio=(float)initialSpeed/(float)coverSpeed;
+    long msleepTime=(long)(40.0*speedRatio);//change the 50.0 up or down to effect turn time
+    
+    
+    display_clear();
+    printf("cover\n");
+    
+    create_spin_CW(coverSpeed);
+    track_update();
+    while(!track_count(color)&&count<30) {    
+        track_update();
+        if(track_count(color)){
+            create_stop();
+            return(1);
+        }
+        count++;
+        msleep(msleepTime);
+    }
+    
+    create_drive_straight(coverSpeed);
+    
+    create_sensor_update(); //update values for bumpers before testing
+    track_update();
+    while(!track_count(color)){//loop while no colored object available
+        count=0;
+        track_update();
+        while(!track_count(color)&&count<4) {//wait 1/20 sec between updates
+            track_update();
+            if(track_count(color)){
+                create_stop();
+                return(1);
+            }
+            count++;
+            msleep(msleepTime);
+        }        
+        
+        create_sensor_update();// update gc_distance
+        if(gc_lbump==1){
+            create_spin_CW(coverSpeed); 
+            count=0;
+            track_update();
+            while(!track_count(color)&&count<30) {//search 1.5 seconds while turning
+                track_update();
+                if(track_count(color)){
+                    create_stop();
+                    return(1);
+                }
+                count++;
+                msleep(msleepTime);
+            }      
+            create_drive_straight(coverSpeed);
+            create_sensor_update();
+        }
+        create_sensor_update();// update gc_distance
+        if(gc_rbump==1){
+            create_spin_CCW(coverSpeed); 
+            count=0;
+            track_update();
+            while(!track_count(color)&&count<30) {//search 1.5 seconds while turning
+                track_update();
+                if(track_count(color)){
+                    create_stop();
+                    return(1);
+                }
+                count++;
+                msleep(msleepTime);
+            }       
+            create_drive_straight(coverSpeed);
+        }
+        if(track_count(color)){
+            create_stop();
+            return(1);
+        }
+        
+    } 
+}

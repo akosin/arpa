@@ -1,0 +1,72 @@
+//Created By: Austin Kosin
+int tx=0;
+int cx=178;
+int ty=0;
+int cy=10;
+int blobSize=0;
+int maxSize=1450;// max size = 32767
+int driveSpeed=60;
+int driveRadius=500;
+float approachTime=0.5;
+
+
+void gotoGreenBall(){
+    int green=1;
+    
+    display_clear();
+    printf("green\n"); 
+    
+    goto(green);
+}
+
+void gotoRedCup(){
+    int red=0;
+    
+    display_clear();
+    printf("red\n");
+    
+    goto(red);
+    
+}
+
+void goto(int color){
+    
+    track_update();
+    tx=track_x(color,0);
+    blobSize=track_size(color,0);
+    
+    while(blobSize<maxSize) {
+        track_update();
+        tx=track_x(color,0);
+        blobSize=track_size(color,0); 
+        
+        display_clear();
+        printf("Tracking Color %d\n",blobSize);  
+        
+        if(track_count(color)) {
+            
+            if(tx>cx) {//blob is on right half of screen
+                create_drive(driveSpeed,driveRadius);//clockwise
+                sleep(approachTime);
+                create_stop();
+            }
+            if(tx==cx){
+                create_drive_straight(driveSpeed);
+                sleep(approachTime);
+                create_stop();
+            }
+            if(tx<cx){//blob is on left half of screen
+                create_drive(driveSpeed,-driveRadius);//counterclockwise
+                sleep(approachTime);
+                create_stop();
+            }
+            
+        }
+        else{
+            cover(color);
+        }
+        
+    }
+    
+    
+}
